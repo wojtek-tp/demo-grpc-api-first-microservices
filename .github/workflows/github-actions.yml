@@ -1,0 +1,24 @@
+name: run-microservice-tests
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Remove old TP
+        run: ([ -z "$(docker images -q trafficparrot)" ] || docker rm trafficparrot)
+      - name: Build Traffic Parrot
+        env:
+            TRAFFIC_PARROT_INSTALLATION_FILE: ${{secrets.TRAFFIC_PARROT_INSTALLATION_FILE}}
+            DOCKER_REGISTRY_HOST: ${{secrets.DOCKER_REGISTRY_HOST}}
+        run: docker build --build-arg TRAFFIC_PARROT_INSTALLATION_FILE=$TRAFFIC_PARROT_INSTALLATION_FILE -t trafficparrot -f trafficparrot/TrafficParrotDockerfile trafficparrot/
+      - name: Run Traffic Parrot
+        run: docker run --name trafficparrot -d -p 5552:5552 trafficparrot
+      - name: Wait For Traffic Parrot
+        run: until docker logs trafficparrot | grep "Started Traffic Parrot"; do sleep 1; done
+      - name: Test Traffic Parrot Mocks
+        run: docker run --network host -v $(pwd)/order-service-definition/order-service.proto:/order-service.proto fullstorydev/grpcurl:v1.8.1 -proto order-service.proto -plaintext -d '{"sku":1, "quantity":7}' localhost:5552 com.trafficparrot.ordering.Order/Purchase
+      - name: Stop TP
+        run: docker stop trafficparrot
+      - name: Push TP image
+        run: docker login -u ${{secrets.DOCKER_REGISTRY_USER}} -p ${{secrets.DOCKER_REGISTRY_PASS}} $DOCKER_REGISTRY_HOST && docker tag trafficparrot $DOCKER_REGISTRY_HOST/trafficparrot/trafficparrot-grpc-api-first && docker push $DOCKER_REGISTRY_HOST/trafficparrot/trafficparrot-grpc-api-first

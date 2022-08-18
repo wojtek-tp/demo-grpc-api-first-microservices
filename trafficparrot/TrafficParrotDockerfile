@@ -1,0 +1,15 @@
+FROM openjdk:8u282-jre
+
+WORKDIR /opt
+
+ADD $TRAFFIC_PARROT_INSTALLATION_FILE trafficparrot.zip
+RUN unzip trafficparrot.zip && rm trafficparrot.zip && mv trafficparrot-* trafficparrot
+
+RUN chgrp -R 0 /opt/trafficparrot && chmod -R g=u /opt/trafficparrot
+
+WORKDIR /opt/trafficparrot
+
+COPY *.proto proto/
+COPY grpc-mappings/* grpc-mappings/
+
+CMD ["./start-foreground.sh"]
