@@ -19,7 +19,7 @@
     "status" : 0,
     "jsonBody" : {
       "status" : "SUCCESS",
-      "message" : "Ordered 1 items of type SKU 1"
+      "message" : "Ordered  1 items of type SKU 1"
     }
   },
   "uuid" : "41e4dac9-fb40-41cd-be8f-fb9eca7d4739",
